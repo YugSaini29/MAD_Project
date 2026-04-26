@@ -1,8 +1,10 @@
 package com.example.momentum;
 
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -20,24 +22,35 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
 
     public static class ViewHolder extends RecyclerView.ViewHolder{
         TextView msgText;
+        LinearLayout container;
 
-        public ViewHolder (View view){
+        public ViewHolder(View view) {
             super(view);
-            msgText = view.findViewById(android.R.id.text1);
+            msgText = view.findViewById(R.id.messageText);
+            container = view.findViewById(R.id.messageContainer);
         }
     }
 
     @NonNull
     @Override
     public ChatAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(android.R.layout.simple_list_item_1,parent,false);
-
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_message, parent, false);
         return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ChatAdapter.ViewHolder holder, int position) {
-        holder.msgText.setText(messages.get(position).text);
+        Message message = messages.get(position);
+        holder.msgText.setText(message.text);
+
+        if (message.isUser) {
+            holder.container.setGravity(Gravity.END);
+            holder.msgText.setBackgroundResource(R.drawable.bg_message_user);
+        } else {
+            holder.container.setGravity(Gravity.START);
+            holder.msgText.setBackgroundResource(R.drawable.bg_message);
+        }
     }
 
     @Override
