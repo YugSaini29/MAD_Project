@@ -1,6 +1,7 @@
 package com.example.momentum;
 
 import android.content.Intent;
+import android.icu.util.Calendar;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -30,7 +31,6 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView recyclerView;
     EditText input;
     Button sendBtn;
-
     List<Message> messageList;
     ChatAdapter adapter;
     @Override
@@ -51,22 +51,32 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
 
 
-        int freeMinutes = getIntent().getIntExtra("free_minutes", -1);
-
         sendBtn.setOnClickListener(v -> {
+
             String text = input.getText().toString().trim();
 
             if (!text.isEmpty()) {
-                // taking in user message
+
+                // show user message
                 messageList.add(new Message(text, true));
                 adapter.notifyItemInserted(messageList.size() - 1);
                 recyclerView.scrollToPosition(messageList.size() - 1);
 
-                input.setText("");
-                String FreeMinsPrompt = " context : Free time available: " + freeMinutes + " minutes. Suggest accordingly.";
 
-                // fake reply until api inclusion
-                sendToAI(text + FreeMinsPrompt);
+                int freeMinutes = getIntent().getIntExtra("free_minutes", 0);
+                boolean hasFreeTime = getIntent().getBooleanExtra("has_free_time", false);
+
+                input.setText("");
+
+                String context;
+
+                if (!hasFreeTime || freeMinutes <= 0) {
+                    context = "Context: User has no free time left today. Suggest rest or something light.";
+                } else {
+                    context = "Context: User has " + freeMinutes + " minutes of free time. Suggest the best task.";
+                }
+
+                sendToAI(text + "\n\n" + context);
             }
         });
 
@@ -98,20 +108,30 @@ public class MainActivity extends AppCompatActivity {
                 JSONObject contentObj = new JSONObject();
                 JSONArray parts = new JSONArray();
 
+                JSONArray goalsArray = new JSONArray();
+
+                List<Goal> goalList = AppData.getInstance().goalList;
+
+                for (Goal g : goalList) {
+                    JSONObject obj = new JSONObject();
+                    obj.put("title", g.title);
+                    obj.put("priority", g.priority);
+                    obj.put("duration_months", g.durationMonths);
+
+                    goalsArray.put(obj);
+                }
+                int freeMinutes = getIntent().getIntExtra("free_minutes", -1);
 
                 String structuredData = "{\n" +
-                        "\"current_time\": \"15:30\",\n" +
+                        "\"current_time\": \"" + getCurrentTime() + "\",\n" +
+                        "\"free_time_minutes\": " + freeMinutes + ",\n" +
 
-
-                        "\"goals\": [\n" +
-                        "  {\"title\": \"Deep Learning\", \"priority\": \"high\", \"progress\": 20},\n" +
-                        "  {\"title\": \"DSA\", \"priority\": \"medium\", \"progress\": 50}\n" +
-                        "],\n" +
+                        "\"goals\": " + goalsArray.toString() + ",\n" +
 
                         "\"tasks\": [\n" +
                         "  {\"title\": \"CNN Basics\", \"duration\": 60, \"goal\": \"Deep Learning\", \"completed\": false},\n" +
                         "  {\"title\": \"Backpropagation\", \"duration\": 120, \"goal\": \"Deep Learning\", \"completed\": false},\n" +
-                        "  {\"title\": \"Solve Leetcode\", \"duration\": 45, \"goal\": \"DSA\", \"completed\": false}\n" +
+                        "  {\"title\": \"Leetcode Problem\", \"duration\": 45, \"goal\": \"DSA\", \"completed\": false}\n" +
                         "]\n" +
                         "}";
 
@@ -124,8 +144,8 @@ public class MainActivity extends AppCompatActivity {
                         "- Prefer tasks that improve progress meaningfully\n" +
                         "- Suggest ONLY ONE task\n" +
                         "- Return format: Task + duration + short reason\n\n" +
-
-                        "User Data:\n" + structuredData +"This message following is from user, try to first see what user's intent is." +userMessage;
+                        "If now free time is there, suggest some light work like revising next class's notes or if time is pass 10pm recomend to sleep" +
+                        " User Data:\n" + structuredData +"This message following is from user, try to first see what user's intent is." +userMessage;
 
 
                 parts.put(new JSONObject().put("text", prompt));
@@ -186,5 +206,14 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         }).start();
+    }
+
+    private String getCurrentTime() {
+        Calendar calendar = Calendar.getInstance();
+
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        int minute = calendar.get(Calendar.MINUTE);
+
+        return String.format("%02d:%02d", hour, minute);
     }
 }

@@ -30,7 +30,7 @@ public class GoalsActivity extends AppCompatActivity {
     RecyclerView recyclerView;
     GoalAdapter adapter;
 
-    List<Goal> goalList = new ArrayList<>();
+    List<Goal> goalList = AppData.getInstance().goalList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

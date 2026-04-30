@@ -86,8 +86,9 @@ public class TimetableActivity extends AppCompatActivity {
             }
 
             Intent intent = new Intent(TimetableActivity.this, MainActivity.class);
-
+            boolean hasFreeTime = currentSlot != null;
             intent.putExtra("free_minutes", minutes);
+            intent.putExtra("has_free_time", hasFreeTime);
 
             startActivity(intent);
 
