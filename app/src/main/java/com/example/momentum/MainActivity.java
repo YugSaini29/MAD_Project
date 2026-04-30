@@ -1,5 +1,6 @@
 package com.example.momentum;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -50,6 +51,8 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
 
 
+        int freeMinutes = getIntent().getIntExtra("free_minutes", -1);
+
         sendBtn.setOnClickListener(v -> {
             String text = input.getText().toString().trim();
 
@@ -60,11 +63,23 @@ public class MainActivity extends AppCompatActivity {
                 recyclerView.scrollToPosition(messageList.size() - 1);
 
                 input.setText("");
+                String FreeMinsPrompt = " context : Free time available: " + freeMinutes + " minutes. Suggest accordingly.";
 
                 // fake reply until api inclusion
-                sendToAI(text);
+                sendToAI(text + FreeMinsPrompt);
             }
         });
+
+        findViewById(R.id.goalsActivity).setOnClickListener(v->{
+            Intent gotogoalsactivity = new Intent(this, GoalsActivity.class);
+            startActivity(gotogoalsactivity);
+        });
+
+        findViewById(R.id.GotoTimeTable).setOnClickListener(v -> {
+            Intent intent = new Intent(this, TimetableActivity.class);
+            startActivity(intent);
+        });
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -74,17 +89,46 @@ public class MainActivity extends AppCompatActivity {
     private void sendToAI(String userMessage) {
         new Thread(() -> {
             try {
+
                 OkHttpClient client = new OkHttpClient();
-                String apiKey = "enter gemini api";
+                String apiKey = "AIzaSyD-sXk0ZPb0JHfr6luxTMZ_mNrltHK5nSQ";
 
                 JSONObject json = new JSONObject();
                 JSONArray contents = new JSONArray();
                 JSONObject contentObj = new JSONObject();
                 JSONArray parts = new JSONArray();
 
-                parts.put(new JSONObject().put("text",
-                        "You are a productivity assistant. Suggest what the user should do next based on goals. Keep answers short.\n\nUser: " + userMessage
-                ));
+
+                String structuredData = "{\n" +
+                        "\"current_time\": \"15:30\",\n" +
+
+
+                        "\"goals\": [\n" +
+                        "  {\"title\": \"Deep Learning\", \"priority\": \"high\", \"progress\": 20},\n" +
+                        "  {\"title\": \"DSA\", \"priority\": \"medium\", \"progress\": 50}\n" +
+                        "],\n" +
+
+                        "\"tasks\": [\n" +
+                        "  {\"title\": \"CNN Basics\", \"duration\": 60, \"goal\": \"Deep Learning\", \"completed\": false},\n" +
+                        "  {\"title\": \"Backpropagation\", \"duration\": 120, \"goal\": \"Deep Learning\", \"completed\": false},\n" +
+                        "  {\"title\": \"Solve Leetcode\", \"duration\": 45, \"goal\": \"DSA\", \"completed\": false}\n" +
+                        "]\n" +
+                        "}";
+
+                String prompt = "You are an intelligent productivity assistant.\n" +
+                        "Your job is to choose the BEST task for the user RIGHT NOW.\n\n" +
+
+                        "Rules:\n" +
+                        "- Prioritize high priority goals\n" +
+                        "- Only pick tasks that fit within available time\n" +
+                        "- Prefer tasks that improve progress meaningfully\n" +
+                        "- Suggest ONLY ONE task\n" +
+                        "- Return format: Task + duration + short reason\n\n" +
+
+                        "User Data:\n" + structuredData +"This message following is from user, try to first see what user's intent is." +userMessage;
+
+
+                parts.put(new JSONObject().put("text", prompt));
 
                 contentObj.put("parts", parts);
                 contents.put(contentObj);
@@ -95,7 +139,6 @@ public class MainActivity extends AppCompatActivity {
                         MediaType.get("application/json")
                 );
 
-                // Note: I swapped 'gemini-1.5-flash-latest' to 'gemini-1.5-flash' (standard alias)
                 Request request = new Request.Builder()
                         .url("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey)
                         .post(body)
@@ -105,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
                 Response response = client.newCall(request).execute();
                 String responseBody = response.body().string();
 
-                // 1. Check if the API actually gave us a 200 OK response
+
                 if (response.isSuccessful()) {
                     JSONObject obj = new JSONObject(responseBody);
 

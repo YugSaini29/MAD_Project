@@ -1,5 +1,7 @@
 package com.example.momentum;
 
+import android.content.Intent;
+import android.icu.util.Calendar;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
@@ -11,6 +13,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,6 +25,8 @@ public class TimetableActivity extends AppCompatActivity {
     EditText startTime, endTime, type;
     Button addBtn;
 
+    RecyclerView recyclerView;
+    ScheduleAdapter adapter;
     List<ScheduleBlock> scheduleList = new ArrayList<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,12 +39,22 @@ public class TimetableActivity extends AppCompatActivity {
         type = findViewById(R.id.type);
         addBtn = findViewById(R.id.addBtn);
 
+        recyclerView = findViewById(R.id.scheduleRecycler);
+
+        adapter = new ScheduleAdapter(scheduleList);
+
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(adapter);
+
+
+
         addBtn.setOnClickListener(v -> {
             String start = startTime.getText().toString();
             String end = endTime.getText().toString();
             String t = type.getText().toString();
 
             scheduleList.add(new ScheduleBlock(start, end, t));
+            adapter.notifyItemInserted(scheduleList.size() - 1);
             Toast.makeText(this, "Block Added", Toast.LENGTH_SHORT).show();
             startTime.setText("");
             endTime.setText("");
@@ -52,10 +68,28 @@ public class TimetableActivity extends AppCompatActivity {
             Log.d("SIZE", "Schedule size: " + scheduleList.size());
 
             List<ScheduleBlock> freeSlots = calculateFreeTime(scheduleList);
+            ScheduleBlock currentSlot = getCurrentFreeSlot(freeSlots);
 
-            for (ScheduleBlock slot : freeSlots) {
-                Log.d("FREE", slot.startTime + " - " + slot.endTime);
+            int minutes = 0;
+            if (currentSlot != null) {
+
+                minutes = getRemainingMinutes(currentSlot);
+
+                Log.d("CURRENT_SLOT", currentSlot.startTime + " - " + currentSlot.endTime);
+                Log.d("MINUTES", "Available: " + minutes);
+                for (ScheduleBlock slot : freeSlots) {
+                    Log.d("FREE_DEBUG", slot.startTime + " - " + slot.endTime);
+                }
+
+            } else {
+                Log.d("STATUS", "No free slot right now");
             }
+
+            Intent intent = new Intent(TimetableActivity.this, MainActivity.class);
+
+            intent.putExtra("free_minutes", minutes);
+
+            startActivity(intent);
 
         });
 
@@ -64,36 +98,105 @@ public class TimetableActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+
+
     }
     public List<ScheduleBlock> calculateFreeTime(List<ScheduleBlock> schedule) {
 
         List<ScheduleBlock> freeTime = new ArrayList<>();
 
-        // Step 1: Sort by start time
-        Collections.sort(schedule, (a, b) -> a.startTime.compareTo(b.startTime));
-
         String dayStart = "08:00";
         String dayEnd = "22:00";
 
-        String prevEnd = dayStart;
+        // Step 1: Sort properly using minutes
+        Collections.sort(schedule, (a, b) ->
+                timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
+        );
+
+        int prevEnd = timeToMinutes(dayStart);
 
         for (ScheduleBlock block : schedule) {
 
+            int start = timeToMinutes(block.startTime);
+            int end = timeToMinutes(block.endTime);
+
+            // Skip invalid blocks
+            if (end <= start) continue;
+
             // If gap exists → free time
-            if (prevEnd.compareTo(block.startTime) < 0) {
-                freeTime.add(new ScheduleBlock(prevEnd, block.startTime, "free"));
+            if (prevEnd < start) {
+                freeTime.add(new ScheduleBlock(
+                        minutesToTime(prevEnd),
+                        minutesToTime(start),
+                        "free"
+                ));
             }
 
-            // Move forward
-            prevEnd = block.endTime;
+            // Move forward safely
+            prevEnd = Math.max(prevEnd, end);
         }
 
-        // Check after last block
-        if (prevEnd.compareTo(dayEnd) < 0) {
-            freeTime.add(new ScheduleBlock(prevEnd, dayEnd, "free"));
+        int dayEndMin = timeToMinutes(dayEnd);
+
+        // Last free slot
+        if (prevEnd < dayEndMin) {
+            freeTime.add(new ScheduleBlock(
+                    minutesToTime(prevEnd),
+                    minutesToTime(dayEndMin),
+                    "free"
+            ));
         }
 
         return freeTime;
     }
+
+    public String minutesToTime(int minutes) {
+        int hour = minutes / 60;
+        int min = minutes % 60;
+        return String.format("%02d:%02d", hour, min);
+    }
+    public String getCurrentTime() {
+        Calendar calendar = Calendar.getInstance();
+
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        int minute = calendar.get(Calendar.MINUTE);
+
+        return String.format("%02d:%02d", hour, minute);
+    }
+
+    public ScheduleBlock getCurrentFreeSlot(List<ScheduleBlock> freeSlots) {
+
+        String currentTime = getCurrentTime();
+
+        for (ScheduleBlock slot : freeSlots) {
+            if (currentTime.compareTo(slot.startTime) >= 0 &&
+                    currentTime.compareTo(slot.endTime) <= 0) {
+                return slot;
+            }
+        }
+
+        return null;
+    }
+
+    public int timeToMinutes(String time) {
+        String[] parts = time.split(":");
+        int hour = Integer.parseInt(parts[0]);
+        int minute = Integer.parseInt(parts[1]);
+
+        return hour * 60 + minute;
+    }
+
+    public int getRemainingMinutes(ScheduleBlock slot) {
+        String currentTime = getCurrentTime();
+
+        int now = timeToMinutes(currentTime);
+        int end = timeToMinutes(slot.endTime);
+
+        return end - now;
+    }
+
+
+
 }
 

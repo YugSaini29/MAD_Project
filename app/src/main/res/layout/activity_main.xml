@@ -12,6 +12,14 @@
         android:text="Set Time table"
         android:layout_gravity="right"
         />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/goalsActivity"
+        android:text="Set Gools"
+        android:layout_gravity="right"
+        />
     <!-- Chat List -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/chatRecycler"
