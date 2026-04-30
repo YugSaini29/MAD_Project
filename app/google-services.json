@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1017257846206",
+    "project_id": "momentumai-ade8f",
+    "storage_bucket": "momentumai-ade8f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1017257846206:android:e8ecc30e3c13fa45b085ef",
+        "android_client_info": {
+          "package_name": "com.example.momentum"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAiMvC0Pzk0J83fh5_RYqyLebHNOYi3FC8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
