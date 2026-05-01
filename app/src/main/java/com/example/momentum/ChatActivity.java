@@ -79,7 +79,7 @@ public class ChatActivity extends AppCompatActivity {
             try {
                 OkHttpClient client = new OkHttpClient();
 
-                String apiKey = "EnterGeminiKey";
+                String apiKey = "AIzaSyAON5Uv9Sb1iDNzmE8k3RzOnm-MBgGos4w";
 
                 JSONArray goalsArray = new JSONArray();
                 List<Goal> goalList = AppData.getInstance().goalList;
@@ -97,6 +97,7 @@ public class ChatActivity extends AppCompatActivity {
                         "\"has_free_time\": " + hasFreeTime + ",\n" +
                         "\"free_time_minutes\": " + freeMinutes + ",\n" +
                         "\"goals\": " + goalsArray.toString() + ",\n" +
+                        "\"todays_schedule\": " + getTodaysSchedule().toString() + ",\n" +
                         "\"tasks\": [\n" +
                         "  {\"title\": \"CNN Basics\", \"duration\": 60, \"goal\": \"Deep Learning\", \"completed\": false},\n" +
                         "  {\"title\": \"Backpropagation\", \"duration\": 120, \"goal\": \"Deep Learning\", \"completed\": false},\n" +
@@ -104,13 +105,16 @@ public class ChatActivity extends AppCompatActivity {
                         "]\n" +
                         "}";
 
-                String prompt = "You are Momentum.ai, a productivity assistant for students.\n" +
-                        "Use the user's goals, available time, and message to respond helpfully.\n\n" +
-                        "Rules:\n" +
-                        "- Keep replies short.\n" +
-                        "- If user asks what to do, suggest one best action.\n" +
-                        "- If no free time is available, suggest rest or light revision.\n\n" +
-                        "User Data:\n" + structuredData + "\n\n" +
+                String prompt = "You are Momentum.ai, an elite productivity coach, academic advisor, and strict time-management assistant for students.\n" +
+                        "Your goal is to guide the user towards their goals, keep them on track with their schedule, and provide high-quality advice.\n\n" +
+                        "Guidelines:\n" +
+                        "1. Be encouraging, highly analytical, and decisive.\n" +
+                        "2. When the user asks 'what should I do?', evaluate their free time, their tasks, and their goals, then suggest exactly ONE actionable task.\n" +
+                        "3. If they are currently inside a scheduled block (like a lecture or study session), remind them to stay focused on that unless they ask for a break.\n" +
+                        "4. If they have limited free time, suggest a micro-task (like a single LeetCode problem or flashcards) that fits perfectly into the gap.\n" +
+                        "5. Always answer the user's specific questions directly while keeping their broader goals and schedule in mind.\n" +
+                        "6. Keep your responses concise and readable (use bullet points if necessary, but avoid long essays).\n\n" +
+                        "User Context:\n" + structuredData + "\n\n" +
                         "User Message:\n" + userMessage;
 
                 JSONObject json = new JSONObject();
@@ -178,5 +182,38 @@ public class ChatActivity extends AppCompatActivity {
         int minute = calendar.get(Calendar.MINUTE);
 
         return String.format("%02d:%02d", hour, minute);
+    }
+
+    private JSONArray getTodaysSchedule() {
+        JSONArray todaysSchedule = new JSONArray();
+        try {
+            String json = getSharedPreferences("app_data", MODE_PRIVATE).getString("schedule", "[]");
+            JSONArray arr = new JSONArray(json);
+            String currentDay = getCurrentDay();
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject obj = arr.getJSONObject(i);
+                if (obj.has("day") && obj.getString("day").equals(currentDay)) {
+                    todaysSchedule.put(obj);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return todaysSchedule;
+    }
+
+    private String getCurrentDay() {
+        Calendar calendar = Calendar.getInstance();
+        int day = calendar.get(Calendar.DAY_OF_WEEK);
+        switch (day) {
+            case Calendar.SUNDAY: return "Sunday";
+            case Calendar.MONDAY: return "Monday";
+            case Calendar.TUESDAY: return "Tuesday";
+            case Calendar.WEDNESDAY: return "Wednesday";
+            case Calendar.THURSDAY: return "Thursday";
+            case Calendar.FRIDAY: return "Friday";
+            case Calendar.SATURDAY: return "Saturday";
+        }
+        return "Monday";
     }
 }

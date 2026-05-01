@@ -4,8 +4,12 @@ import android.content.Intent;
 import android.icu.util.Calendar;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -26,11 +30,13 @@ import java.util.List;
 public class TimetableActivity extends AppCompatActivity {
 
     EditText startTime, endTime, type;
+    Spinner daySpinner;
     Button addBtn;
 
     RecyclerView recyclerView;
     ScheduleAdapter adapter;
     List<ScheduleBlock> scheduleList = new ArrayList<>();
+    List<ScheduleBlock> filteredList = new ArrayList<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,11 +46,27 @@ public class TimetableActivity extends AppCompatActivity {
         startTime = findViewById(R.id.startTime);
         endTime = findViewById(R.id.endTime);
         type = findViewById(R.id.type);
+        daySpinner = findViewById(R.id.daySpinner);
         addBtn = findViewById(R.id.addBtn);
+
+        String[] days = new String[]{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, days);
+        daySpinner.setAdapter(spinnerAdapter);
+
+        daySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                filterScheduleByDay();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
 
         recyclerView = findViewById(R.id.scheduleRecycler);
 
-        adapter = new ScheduleAdapter(scheduleList);
+        adapter = new ScheduleAdapter(filteredList);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
@@ -52,12 +74,13 @@ public class TimetableActivity extends AppCompatActivity {
         loadScheduleLocally();
 
         addBtn.setOnClickListener(v -> {
+            String day = daySpinner.getSelectedItem().toString();
             String start = startTime.getText().toString();
             String end = endTime.getText().toString();
             String t = type.getText().toString();
 
-            scheduleList.add(new ScheduleBlock(start, end, t));
-            adapter.notifyItemInserted(scheduleList.size() - 1);
+            scheduleList.add(new ScheduleBlock(day, start, end, t));
+            filterScheduleByDay();
             Toast.makeText(this, "Block Added", Toast.LENGTH_SHORT).show();
             startTime.setText("");
             endTime.setText("");
@@ -70,7 +93,15 @@ public class TimetableActivity extends AppCompatActivity {
 
             Log.d("SIZE", "Schedule size: " + scheduleList.size());
 
-            List<ScheduleBlock> freeSlots = calculateFreeTime(scheduleList);
+            String currentDay = getCurrentDay();
+            List<ScheduleBlock> currentDaySchedule = new ArrayList<>();
+            for (ScheduleBlock block : scheduleList) {
+                if (block.day != null && block.day.equals(currentDay)) {
+                    currentDaySchedule.add(block);
+                }
+            }
+
+            List<ScheduleBlock> freeSlots = calculateFreeTime(currentDaySchedule, currentDay);
             ScheduleBlock currentSlot = getCurrentFreeSlot(freeSlots);
 
             int minutes = 0;
@@ -108,7 +139,22 @@ public class TimetableActivity extends AppCompatActivity {
 
 
     }
-    public List<ScheduleBlock> calculateFreeTime(List<ScheduleBlock> schedule) {
+
+    private void filterScheduleByDay() {
+        if (daySpinner == null || daySpinner.getSelectedItem() == null) return;
+        String selectedDay = daySpinner.getSelectedItem().toString();
+        filteredList.clear();
+        for (ScheduleBlock block : scheduleList) {
+            if (block.day != null && block.day.equals(selectedDay)) {
+                filteredList.add(block);
+            }
+        }
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
+    }
+
+    public List<ScheduleBlock> calculateFreeTime(List<ScheduleBlock> schedule, String currentDay) {
 
         List<ScheduleBlock> freeTime = new ArrayList<>();
 
@@ -133,6 +179,7 @@ public class TimetableActivity extends AppCompatActivity {
             // If gap exists → free time
             if (prevEnd < start) {
                 freeTime.add(new ScheduleBlock(
+                        currentDay,
                         minutesToTime(prevEnd),
                         minutesToTime(start),
                         "free"
@@ -148,6 +195,7 @@ public class TimetableActivity extends AppCompatActivity {
         // Last free slot
         if (prevEnd < dayEndMin) {
             freeTime.add(new ScheduleBlock(
+                    currentDay,
                     minutesToTime(prevEnd),
                     minutesToTime(dayEndMin),
                     "free"
@@ -162,6 +210,21 @@ public class TimetableActivity extends AppCompatActivity {
         int min = minutes % 60;
         return String.format("%02d:%02d", hour, min);
     }
+    public String getCurrentDay() {
+        Calendar calendar = Calendar.getInstance();
+        int day = calendar.get(Calendar.DAY_OF_WEEK);
+        switch (day) {
+            case Calendar.SUNDAY: return "Sunday";
+            case Calendar.MONDAY: return "Monday";
+            case Calendar.TUESDAY: return "Tuesday";
+            case Calendar.WEDNESDAY: return "Wednesday";
+            case Calendar.THURSDAY: return "Thursday";
+            case Calendar.FRIDAY: return "Friday";
+            case Calendar.SATURDAY: return "Saturday";
+        }
+        return "Monday";
+    }
+
     public String getCurrentTime() {
         Calendar calendar = Calendar.getInstance();
 
@@ -208,6 +271,7 @@ public class TimetableActivity extends AppCompatActivity {
         try {
             for (ScheduleBlock block : scheduleList) {
                 JSONObject obj = new JSONObject();
+                obj.put("day", block.day);
                 obj.put("startTime", block.startTime);
                 obj.put("endTime", block.endTime);
                 obj.put("type", block.type);
@@ -235,14 +299,20 @@ public class TimetableActivity extends AppCompatActivity {
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject obj = arr.getJSONObject(i);
 
+                String day = "Monday"; // default
+                if (obj.has("day")) {
+                    day = obj.getString("day");
+                }
+
                 scheduleList.add(new ScheduleBlock(
+                        day,
                         obj.getString("startTime"),
                         obj.getString("endTime"),
                         obj.getString("type")
                 ));
             }
 
-            adapter.notifyDataSetChanged();
+            filterScheduleByDay();
 
         } catch (Exception e) {
             e.printStackTrace();
