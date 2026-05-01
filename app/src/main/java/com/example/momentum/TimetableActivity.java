@@ -16,6 +16,9 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,7 +49,7 @@ public class TimetableActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
-
+        loadScheduleLocally();
 
         addBtn.setOnClickListener(v -> {
             String start = startTime.getText().toString();
@@ -84,9 +87,11 @@ public class TimetableActivity extends AppCompatActivity {
             } else {
                 Log.d("STATUS", "No free slot right now");
             }
+            saveScheduleLocally(scheduleList);
 
             Intent intent = new Intent(TimetableActivity.this, MainActivity.class);
             boolean hasFreeTime = currentSlot != null;
+
             intent.putExtra("free_minutes", minutes);
             intent.putExtra("has_free_time", hasFreeTime);
 
@@ -197,7 +202,51 @@ public class TimetableActivity extends AppCompatActivity {
         return end - now;
     }
 
+    private void saveScheduleLocally(List<ScheduleBlock> scheduleList) {
+        JSONArray arr = new JSONArray();
 
+        try {
+            for (ScheduleBlock block : scheduleList) {
+                JSONObject obj = new JSONObject();
+                obj.put("startTime", block.startTime);
+                obj.put("endTime", block.endTime);
+                obj.put("type", block.type);
+                arr.put(obj);
+            }
 
+            getSharedPreferences("app_data", MODE_PRIVATE)
+                    .edit()
+                    .putString("schedule", arr.toString())
+                    .apply();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadScheduleLocally() {
+        String json = getSharedPreferences("app_data", MODE_PRIVATE)
+                .getString("schedule", "[]");
+
+        try {
+            JSONArray arr = new JSONArray(json);
+            scheduleList.clear();
+
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject obj = arr.getJSONObject(i);
+
+                scheduleList.add(new ScheduleBlock(
+                        obj.getString("startTime"),
+                        obj.getString("endTime"),
+                        obj.getString("type")
+                ));
+            }
+
+            adapter.notifyDataSetChanged();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
 

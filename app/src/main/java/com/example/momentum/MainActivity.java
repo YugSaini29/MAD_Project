@@ -1,25 +1,16 @@
 package com.example.momentum;
 
 import android.content.Intent;
-import android.icu.util.Calendar;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.TextView;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.firestore.FirebaseFirestore;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import org.json.*;
-
-import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 import okhttp3.MediaType;
@@ -30,88 +21,76 @@ import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-    RecyclerView recyclerView;
-    EditText input;
-    Button sendBtn;
-    List<Message> messageList;
-    ChatAdapter adapter;
+    TextView timeText, freeTimeText, suggestionText;
+    Button getSuggestionBtn, goalsBtn, timeTableBtn, openChatBtn;
+
+    int freeMinutes;
+    boolean hasFreeTime;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+        timeText = findViewById(R.id.timeText);
+        freeTimeText = findViewById(R.id.freeTimeText);
+        suggestionText = findViewById(R.id.suggestionText);
+        getSuggestionBtn = findViewById(R.id.getSuggestionBtn);
+        goalsBtn = findViewById(R.id.goalsActivity);
+        timeTableBtn = findViewById(R.id.GotoTimeTable);
+        openChatBtn = findViewById(R.id.openChatBtn);
 
-        recyclerView = findViewById(R.id.chatRecycler);
-        input = findViewById(R.id.messageInput);
-        sendBtn = findViewById(R.id.sendBtn);
+        freeMinutes = getIntent().getIntExtra("free_minutes", 0);
+        hasFreeTime = getIntent().getBooleanExtra("has_free_time", false);
 
-        messageList = new ArrayList<>();
-        adapter = new ChatAdapter(messageList);
+        timeText.setText("Current Time: " + getCurrentTime());
 
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(adapter);
+        if (!hasFreeTime || freeMinutes <= 0) {
+            freeTimeText.setText("Free Time: No active free slot");
+        } else {
+            freeTimeText.setText("Free Time: " + freeMinutes + " mins");
+        }
 
+        getSuggestionBtn.setOnClickListener(v -> {
+            suggestionText.setText("Thinking...");
 
-        sendBtn.setOnClickListener(v -> {
+            String context;
 
-            String text = input.getText().toString().trim();
-
-            if (!text.isEmpty()) {
-
-                // show user message
-                messageList.add(new Message(text, true));
-                adapter.notifyItemInserted(messageList.size() - 1);
-                recyclerView.scrollToPosition(messageList.size() - 1);
-
-
-                int freeMinutes = getIntent().getIntExtra("free_minutes", 0);
-                boolean hasFreeTime = getIntent().getBooleanExtra("has_free_time", false);
-
-                input.setText("");
-
-                String context;
-
-                if (!hasFreeTime || freeMinutes <= 0) {
-                    context = "Context: User has no free time left today. Suggest rest or something light.";
-                } else {
-                    context = "Context: User has " + freeMinutes + " minutes of free time. Suggest the best task.";
-                }
-
-                sendToAI(text + "\n\n" + context);
+            if (!hasFreeTime || freeMinutes <= 0) {
+                context = "User has no active free time slot right now. If it is late, suggest rest or something light.";
+            } else {
+                context = "User has " + freeMinutes + " minutes of free time right now. Suggest the best task.";
             }
+
+            sendToAI(context);
         });
 
-        findViewById(R.id.goalsActivity).setOnClickListener(v->{
-            Intent gotogoalsactivity = new Intent(this, GoalsActivity.class);
-            startActivity(gotogoalsactivity);
-        });
-
-        findViewById(R.id.GotoTimeTable).setOnClickListener(v -> {
-            Intent intent = new Intent(this, TimetableActivity.class);
+        goalsBtn.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, GoalsActivity.class);
             startActivity(intent);
         });
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
+        timeTableBtn.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, TimetableActivity.class);
+            startActivity(intent);
+        });
+
+        openChatBtn.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, ChatActivity.class);
+            intent.putExtra("free_minutes", freeMinutes);
+            intent.putExtra("has_free_time", hasFreeTime);
+            startActivity(intent);
         });
     }
+
     private void sendToAI(String userMessage) {
         new Thread(() -> {
             try {
-
                 OkHttpClient client = new OkHttpClient();
-                String apiKey = "AIzaSyD-sXk0ZPb0JHfr6luxTMZ_mNrltHK5nSQ";
 
-                JSONObject json = new JSONObject();
-                JSONArray contents = new JSONArray();
-                JSONObject contentObj = new JSONObject();
-                JSONArray parts = new JSONArray();
+                String apiKey = "EnterGeminiKey";
 
                 JSONArray goalsArray = new JSONArray();
-
                 List<Goal> goalList = AppData.getInstance().goalList;
 
                 for (Goal g : goalList) {
@@ -119,39 +98,56 @@ public class MainActivity extends AppCompatActivity {
                     obj.put("title", g.title);
                     obj.put("priority", g.priority);
                     obj.put("duration_months", g.durationMonths);
-
                     goalsArray.put(obj);
                 }
-                int freeMinutes = getIntent().getIntExtra("free_minutes", -1);
 
-                String structuredData = "{\n" +
-                        "\"current_time\": \"" + getCurrentTime() + "\",\n" +
-                        "\"free_time_minutes\": " + freeMinutes + ",\n" +
+                JSONObject userData = new JSONObject();
 
-                        "\"goals\": " + goalsArray.toString() + ",\n" +
+                userData.put("current_time", getCurrentTime());
+                userData.put("has_free_time", hasFreeTime);
+                userData.put("free_time_minutes", freeMinutes);
+                userData.put("goals", goalsArray);
 
-                        "\"tasks\": [\n" +
-                        "  {\"title\": \"CNN Basics\", \"duration\": 60, \"goal\": \"Deep Learning\", \"completed\": false},\n" +
-                        "  {\"title\": \"Backpropagation\", \"duration\": 120, \"goal\": \"Deep Learning\", \"completed\": false},\n" +
-                        "  {\"title\": \"Leetcode Problem\", \"duration\": 45, \"goal\": \"DSA\", \"completed\": false}\n" +
-                        "]\n" +
-                        "}";
+                // tasks array
+                JSONArray tasks = new JSONArray();
+
+                tasks.put(new JSONObject()
+                        .put("title", "CNN Basics")
+                        .put("duration", 60)
+                        .put("goal", "Deep Learning")
+                        .put("completed", false));
+
+                tasks.put(new JSONObject()
+                        .put("title", "Backpropagation")
+                        .put("duration", 120)
+                        .put("goal", "Deep Learning")
+                        .put("completed", false));
+
+                tasks.put(new JSONObject()
+                        .put("title", "Leetcode Problem")
+                        .put("duration", 45)
+                        .put("goal", "DSA")
+                        .put("completed", false));
+
+                userData.put("tasks", tasks);
 
                 String prompt = "You are an intelligent productivity assistant.\n" +
-                        "Your job is to choose the BEST task for the user RIGHT NOW.\n\n" +
+                        "Decide what the user should do RIGHT NOW.\n\n" +
 
                         "Rules:\n" +
+                        "- Suggest only ONE task\n" +
                         "- Prioritize high priority goals\n" +
-                        "- Only pick tasks that fit within available time\n" +
-                        "- Prefer tasks that improve progress meaningfully\n" +
-                        "- Suggest ONLY ONE task\n" +
-                        "- Return format: Task + duration + short reason\n\n" +
-                        "If now free time is there, suggest some light work like revising next class's notes or if time is pass 10pm recomend to sleep" +
-                        " User Data:\n" + structuredData +"This message following is from user, try to first see what user's intent is." +userMessage;
+                        "- Respect available time\n" +
+                        "- If no free time is available, suggest rest or light revision.\n" +
+                        "User Data:\n" + userData.toString() + "\n\n" +
+                        "User Message:\n" + userMessage;
 
+                JSONObject json = new JSONObject();
+                JSONArray contents = new JSONArray();
+                JSONObject contentObj = new JSONObject();
+                JSONArray parts = new JSONArray();
 
                 parts.put(new JSONObject().put("text", prompt));
-
                 contentObj.put("parts", parts);
                 contents.put(contentObj);
                 json.put("contents", contents);
@@ -170,7 +166,6 @@ public class MainActivity extends AppCompatActivity {
                 Response response = client.newCall(request).execute();
                 String responseBody = response.body().string();
 
-
                 if (response.isSuccessful()) {
                     JSONObject obj = new JSONObject(responseBody);
 
@@ -181,31 +176,14 @@ public class MainActivity extends AppCompatActivity {
                             .getJSONObject(0)
                             .getString("text");
 
-                    runOnUiThread(() -> {
-                        messageList.add(new Message(reply, false));
-                        adapter.notifyItemInserted(messageList.size() - 1);
-                        recyclerView.scrollToPosition(messageList.size() - 1);
-                    });
+                    runOnUiThread(() -> suggestionText.setText(reply));
                 } else {
-                    // 2. If it fails, log the exact error so you can debug it
-                    System.err.println("Gemini API Error! Code: " + response.code());
-                    System.err.println("Error Body: " + responseBody);
-
-                    runOnUiThread(() -> {
-                        messageList.add(new Message("Error: " + response.code(), false));
-                        adapter.notifyItemInserted(messageList.size() - 1);
-                        recyclerView.scrollToPosition(messageList.size() - 1);
-                    });
+                    runOnUiThread(() -> suggestionText.setText("Error: " + response.code()));
                 }
 
             } catch (Exception e) {
-                // 3. Catch actual crashes (like no internet or parsing errors)
                 e.printStackTrace();
-                runOnUiThread(() -> {
-                    messageList.add(new Message("Network or Parsing Exception", false));
-                    adapter.notifyItemInserted(messageList.size() - 1);
-                    recyclerView.scrollToPosition(messageList.size() - 1);
-                });
+                runOnUiThread(() -> suggestionText.setText("Network or parsing error"));
             }
         }).start();
     }
