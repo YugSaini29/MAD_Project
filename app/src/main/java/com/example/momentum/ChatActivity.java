@@ -78,8 +78,16 @@ public class ChatActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 OkHttpClient client = new OkHttpClient();
+                String apiKey = BuildConfig.GEMINI_API_KEY.trim();
 
-                String apiKey = "Geminikey";
+                if (apiKey.isEmpty()) {
+                    runOnUiThread(() -> {
+                        messageList.add(new Message("Set GEMINI_API_KEY in local.properties", false));
+                        adapter.notifyItemInserted(messageList.size() - 1);
+                        recyclerView.scrollToPosition(messageList.size() - 1);
+                    });
+                    return;
+                }
 
                 JSONArray goalsArray = new JSONArray();
                 List<Goal> goalList = AppData.getInstance().goalList;
@@ -138,30 +146,31 @@ public class ChatActivity extends AppCompatActivity {
                         .addHeader("Content-Type", "application/json")
                         .build();
 
-                Response response = client.newCall(request).execute();
-                String responseBody = response.body().string();
+                try (Response response = client.newCall(request).execute()) {
+                    String responseBody = response.body() != null ? response.body().string() : "";
 
-                if (response.isSuccessful()) {
-                    JSONObject obj = new JSONObject(responseBody);
+                    if (response.isSuccessful()) {
+                        JSONObject obj = new JSONObject(responseBody);
 
-                    String reply = obj.getJSONArray("candidates")
-                            .getJSONObject(0)
-                            .getJSONObject("content")
-                            .getJSONArray("parts")
-                            .getJSONObject(0)
-                            .getString("text");
+                        String reply = obj.getJSONArray("candidates")
+                                .getJSONObject(0)
+                                .getJSONObject("content")
+                                .getJSONArray("parts")
+                                .getJSONObject(0)
+                                .getString("text");
 
-                    runOnUiThread(() -> {
-                        messageList.add(new Message(reply, false));
-                        adapter.notifyItemInserted(messageList.size() - 1);
-                        recyclerView.scrollToPosition(messageList.size() - 1);
-                    });
-                } else {
-                    runOnUiThread(() -> {
-                        messageList.add(new Message("Error: " + response.code(), false));
-                        adapter.notifyItemInserted(messageList.size() - 1);
-                        recyclerView.scrollToPosition(messageList.size() - 1);
-                    });
+                        runOnUiThread(() -> {
+                            messageList.add(new Message(reply, false));
+                            adapter.notifyItemInserted(messageList.size() - 1);
+                            recyclerView.scrollToPosition(messageList.size() - 1);
+                        });
+                    } else {
+                        runOnUiThread(() -> {
+                            messageList.add(new Message("AI request failed: " + response.code(), false));
+                            adapter.notifyItemInserted(messageList.size() - 1);
+                            recyclerView.scrollToPosition(messageList.size() - 1);
+                        });
+                    }
                 }
 
             } catch (Exception e) {

@@ -12,34 +12,32 @@
         android:orientation="vertical"
         android:padding="24dp">
 
-        <!-- Header Section -->
         <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="Momentum.ai"
             android:textColor="@color/text_primary"
             android:textSize="32sp"
-            android:textStyle="bold"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:textStyle="bold" />
 
         <TextView
-            android:text="Your learning command center"
-            android:textColor="@color/text_secondary"
-            android:textSize="16sp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"/>
+            android:layout_marginTop="4dp"
+            android:text="Your learning command center"
+            android:textColor="@color/text_secondary"
+            android:textSize="16sp" />
 
         <TextView
             android:id="@+id/timeText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
             android:text="Current Time: --:--"
             android:textColor="@color/accent_blue_glow"
             android:textSize="14sp"
-            android:textStyle="bold"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"/>
+            android:textStyle="bold" />
 
-        <!-- Main Hero Card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -51,66 +49,65 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
                 android:background="@drawable/bg_gradient_card"
+                android:orientation="vertical"
                 android:padding="24dp">
 
                 <TextView
-                    android:text="⚡ Do This Right Now"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Do This Right Now"
                     android:textColor="@color/text_primary"
                     android:textSize="24sp"
-                    android:textStyle="bold"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/freeTimeText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
                     android:text="Free Time: -- mins"
                     android:textColor="@color/accent_green"
                     android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="6dp"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/suggestionText"
-                    android:text="Ready to plan your next move?"
-                    android:textColor="@color/text_primary"
-                    android:textSize="18sp"
-                    android:lineSpacingExtra="6dp"
-                    android:gravity="center"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
                     android:layout_marginBottom="8dp"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
+                    android:gravity="center"
+                    android:lineSpacingExtra="6dp"
+                    android:text="Ready to plan your next move?"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp" />
 
                 <Button
                     android:id="@+id/getSuggestionBtn"
-                    android:text="Get Suggestion →"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="24dp"
+                    android:background="@drawable/bg_button_gradient_blue"
+                    android:elevation="4dp"
+                    android:text="Get Suggestion"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    android:background="@drawable/bg_button_gradient_blue"
-                    android:layout_marginTop="24dp"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:elevation="4dp"
-                    app:backgroundTint="@null"/>
+                    app:backgroundTint="@null" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Quick Actions -->
         <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:layout_marginBottom="16dp"
             android:text="Quick Actions"
             android:textColor="@color/text_primary"
             android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginTop="40dp"
-            android:layout_marginBottom="16dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:textStyle="bold" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -121,83 +118,89 @@
                 android:id="@+id/goalsActivity"
                 android:layout_width="match_parent"
                 android:layout_height="64dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp"
                 android:background="@drawable/bg_action_card"
                 android:clickable="true"
                 android:focusable="true"
-                android:paddingHorizontal="20dp"
-                android:layout_marginBottom="12dp">
-                
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="20dp">
+
                 <TextView
-                    android:text="🎯"
-                    android:textSize="20sp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="16dp"/>
-                    
+                    android:layout_marginEnd="16dp"
+                    android:text="G"
+                    android:textColor="@color/accent_blue_glow"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="Set Goals"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/GotoTimeTable"
                 android:layout_width="match_parent"
                 android:layout_height="64dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp"
                 android:background="@drawable/bg_action_card"
                 android:clickable="true"
                 android:focusable="true"
-                android:paddingHorizontal="20dp"
-                android:layout_marginBottom="12dp">
-                
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="20dp">
+
                 <TextView
-                    android:text="📅"
-                    android:textSize="20sp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="16dp"/>
-                    
+                    android:layout_marginEnd="16dp"
+                    android:text="T"
+                    android:textColor="@color/accent_blue_glow"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="Edit Timetable"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/openChatBtn"
                 android:layout_width="match_parent"
                 android:layout_height="64dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
                 android:background="@drawable/bg_action_card"
                 android:clickable="true"
                 android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
                 android:paddingHorizontal="20dp">
-                
+
                 <TextView
-                    android:text="💬"
-                    android:textSize="20sp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="16dp"/>
-                    
+                    android:layout_marginEnd="16dp"
+                    android:text="C"
+                    android:textColor="@color/accent_blue_glow"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
                 <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="Open Chat"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:textStyle="bold" />
             </LinearLayout>
 
         </LinearLayout>

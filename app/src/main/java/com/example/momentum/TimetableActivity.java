@@ -75,9 +75,24 @@ public class TimetableActivity extends AppCompatActivity {
 
         addBtn.setOnClickListener(v -> {
             String day = daySpinner.getSelectedItem().toString();
-            String start = startTime.getText().toString();
-            String end = endTime.getText().toString();
-            String t = type.getText().toString();
+            String start = startTime.getText().toString().trim();
+            String end = endTime.getText().toString().trim();
+            String t = type.getText().toString().trim();
+
+            if (start.isEmpty() || end.isEmpty() || t.isEmpty()) {
+                Toast.makeText(this, "Fill in all fields", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (!isValidTime(start) || !isValidTime(end)) {
+                Toast.makeText(this, "Use 24-hour HH:mm format", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (timeToMinutes(end) <= timeToMinutes(start)) {
+                Toast.makeText(this, "End time must be after start time", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
             scheduleList.add(new ScheduleBlock(day, start, end, t));
             filterScheduleByDay();
@@ -254,6 +269,10 @@ public class TimetableActivity extends AppCompatActivity {
         int minute = Integer.parseInt(parts[1]);
 
         return hour * 60 + minute;
+    }
+
+    private boolean isValidTime(String time) {
+        return time.matches("^([01]\\d|2[0-3]):[0-5]\\d$");
     }
 
     public int getRemainingMinutes(ScheduleBlock slot) {

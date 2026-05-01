@@ -3,7 +3,6 @@ package com.example.momentum;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -88,8 +87,12 @@ public class MainActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 OkHttpClient client = new OkHttpClient();
+                String apiKey = BuildConfig.GEMINI_API_KEY.trim();
 
-                String apiKey = "GeminiKey";
+                if (apiKey.isEmpty()) {
+                    runOnUiThread(() -> suggestionText.setText("Set GEMINI_API_KEY in local.properties"));
+                    return;
+                }
 
                 JSONArray goalsArray = new JSONArray();
                 List<Goal> goalList = AppData.getInstance().goalList;
@@ -165,22 +168,23 @@ public class MainActivity extends AppCompatActivity {
                         .addHeader("Content-Type", "application/json")
                         .build();
 
-                Response response = client.newCall(request).execute();
-                String responseBody = response.body().string();
+                try (Response response = client.newCall(request).execute()) {
+                    String responseBody = response.body() != null ? response.body().string() : "";
 
-                if (response.isSuccessful()) {
-                    JSONObject obj = new JSONObject(responseBody);
+                    if (response.isSuccessful()) {
+                        JSONObject obj = new JSONObject(responseBody);
 
-                    String reply = obj.getJSONArray("candidates")
-                            .getJSONObject(0)
-                            .getJSONObject("content")
-                            .getJSONArray("parts")
-                            .getJSONObject(0)
-                            .getString("text");
+                        String reply = obj.getJSONArray("candidates")
+                                .getJSONObject(0)
+                                .getJSONObject("content")
+                                .getJSONArray("parts")
+                                .getJSONObject(0)
+                                .getString("text");
 
-                    runOnUiThread(() -> suggestionText.setText(reply));
-                } else {
-                    runOnUiThread(() -> suggestionText.setText("Error: " + response.code()));
+                        runOnUiThread(() -> suggestionText.setText(reply));
+                    } else {
+                        runOnUiThread(() -> suggestionText.setText("AI request failed: " + response.code()));
+                    }
                 }
 
             } catch (Exception e) {
