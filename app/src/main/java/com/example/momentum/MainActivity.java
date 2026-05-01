@@ -2,7 +2,7 @@ package com.example.momentum;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Button;
+import android.view.View;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,7 +22,7 @@ import okhttp3.Response;
 public class MainActivity extends AppCompatActivity {
 
     TextView timeText, freeTimeText, suggestionText;
-    Button getSuggestionBtn, goalsBtn, timeTableBtn, openChatBtn;
+    View getSuggestionBtn, goalsBtn, timeTableBtn, openChatBtn;
 
     int freeMinutes;
     boolean hasFreeTime;
@@ -87,8 +87,12 @@ public class MainActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 OkHttpClient client = new OkHttpClient();
+                String apiKey = BuildConfig.GEMINI_API_KEY.trim();
 
-                String apiKey = "EnterGeminiKey";
+                if (apiKey.isEmpty()) {
+                    runOnUiThread(() -> suggestionText.setText("Set GEMINI_API_KEY in local.properties"));
+                    return;
+                }
 
                 JSONArray goalsArray = new JSONArray();
                 List<Goal> goalList = AppData.getInstance().goalList;
@@ -107,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
                 userData.put("has_free_time", hasFreeTime);
                 userData.put("free_time_minutes", freeMinutes);
                 userData.put("goals", goalsArray);
+                userData.put("todays_schedule", getTodaysSchedule());
 
                 // tasks array
                 JSONArray tasks = new JSONArray();
@@ -131,15 +136,15 @@ public class MainActivity extends AppCompatActivity {
 
                 userData.put("tasks", tasks);
 
-                String prompt = "You are an intelligent productivity assistant.\n" +
-                        "Decide what the user should do RIGHT NOW.\n\n" +
-
+                String prompt = "You are Momentum.ai, an elite productivity coach and strict time-management assistant.\n" +
+                        "Your goal is to tell the user exactly what they should do RIGHT NOW to maximize their long-term success without burning out.\n\n" +
                         "Rules:\n" +
-                        "- Suggest only ONE task\n" +
-                        "- Prioritize high priority goals\n" +
-                        "- Respect available time\n" +
-                        "- If no free time is available, suggest rest or light revision.\n" +
-                        "User Data:\n" + userData.toString() + "\n\n" +
+                        "1. Provide exactly ONE clear, actionable task the user should focus on right now.\n" +
+                        "2. If the user has a free block, select the highest priority task that fits within the available free time.\n" +
+                        "3. If the user does not have free time right now (e.g., they are in a scheduled block like 'Class' or 'Study'), strongly remind them to focus on their current scheduled block.\n" +
+                        "4. If it is late at night or they have been working all day, recommend rest or light review to prevent burnout.\n" +
+                        "5. Be concise, motivating, and direct. Do not give a long list of options. Be decisive.\n\n" +
+                        "User Data (Context):\n" + userData.toString() + "\n\n" +
                         "User Message:\n" + userMessage;
 
                 JSONObject json = new JSONObject();
@@ -163,22 +168,23 @@ public class MainActivity extends AppCompatActivity {
                         .addHeader("Content-Type", "application/json")
                         .build();
 
-                Response response = client.newCall(request).execute();
-                String responseBody = response.body().string();
+                try (Response response = client.newCall(request).execute()) {
+                    String responseBody = response.body() != null ? response.body().string() : "";
 
-                if (response.isSuccessful()) {
-                    JSONObject obj = new JSONObject(responseBody);
+                    if (response.isSuccessful()) {
+                        JSONObject obj = new JSONObject(responseBody);
 
-                    String reply = obj.getJSONArray("candidates")
-                            .getJSONObject(0)
-                            .getJSONObject("content")
-                            .getJSONArray("parts")
-                            .getJSONObject(0)
-                            .getString("text");
+                        String reply = obj.getJSONArray("candidates")
+                                .getJSONObject(0)
+                                .getJSONObject("content")
+                                .getJSONArray("parts")
+                                .getJSONObject(0)
+                                .getString("text");
 
-                    runOnUiThread(() -> suggestionText.setText(reply));
-                } else {
-                    runOnUiThread(() -> suggestionText.setText("Error: " + response.code()));
+                        runOnUiThread(() -> suggestionText.setText(reply));
+                    } else {
+                        runOnUiThread(() -> suggestionText.setText("AI request failed: " + response.code()));
+                    }
                 }
 
             } catch (Exception e) {
@@ -195,5 +201,38 @@ public class MainActivity extends AppCompatActivity {
         int minute = calendar.get(Calendar.MINUTE);
 
         return String.format("%02d:%02d", hour, minute);
+    }
+
+    private JSONArray getTodaysSchedule() {
+        JSONArray todaysSchedule = new JSONArray();
+        try {
+            String json = getSharedPreferences("app_data", MODE_PRIVATE).getString("schedule", "[]");
+            JSONArray arr = new JSONArray(json);
+            String currentDay = getCurrentDay();
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject obj = arr.getJSONObject(i);
+                if (obj.has("day") && obj.getString("day").equals(currentDay)) {
+                    todaysSchedule.put(obj);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return todaysSchedule;
+    }
+
+    private String getCurrentDay() {
+        Calendar calendar = Calendar.getInstance();
+        int day = calendar.get(Calendar.DAY_OF_WEEK);
+        switch (day) {
+            case Calendar.SUNDAY: return "Sunday";
+            case Calendar.MONDAY: return "Monday";
+            case Calendar.TUESDAY: return "Tuesday";
+            case Calendar.WEDNESDAY: return "Wednesday";
+            case Calendar.THURSDAY: return "Thursday";
+            case Calendar.FRIDAY: return "Friday";
+            case Calendar.SATURDAY: return "Saturday";
+        }
+        return "Monday";
     }
 }

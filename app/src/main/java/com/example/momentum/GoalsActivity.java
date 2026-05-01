@@ -62,7 +62,7 @@ public class GoalsActivity extends AppCompatActivity {
 
         ArrayAdapter<String> adapterSpinner = new ArrayAdapter<>(
                 this,
-                android.R.layout.simple_spinner_dropdown_item,
+                R.layout.item_spinner,
                 priorities
         );
 
