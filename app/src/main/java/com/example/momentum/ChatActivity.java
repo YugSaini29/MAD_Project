@@ -79,7 +79,7 @@ public class ChatActivity extends AppCompatActivity {
             try {
                 OkHttpClient client = new OkHttpClient();
 
-                String apiKey = "AIzaSyAON5Uv9Sb1iDNzmE8k3RzOnm-MBgGos4w";
+                String apiKey = "Geminikey";
 
                 JSONArray goalsArray = new JSONArray();
                 List<Goal> goalList = AppData.getInstance().goalList;

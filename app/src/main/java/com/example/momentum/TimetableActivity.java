@@ -50,7 +50,7 @@ public class TimetableActivity extends AppCompatActivity {
         addBtn = findViewById(R.id.addBtn);
 
         String[] days = new String[]{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
-        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, days);
+        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, R.layout.item_spinner, days);
         daySpinner.setAdapter(spinnerAdapter);
 
         daySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {

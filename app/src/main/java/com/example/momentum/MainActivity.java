@@ -2,6 +2,7 @@ package com.example.momentum;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -22,7 +23,7 @@ import okhttp3.Response;
 public class MainActivity extends AppCompatActivity {
 
     TextView timeText, freeTimeText, suggestionText;
-    Button getSuggestionBtn, goalsBtn, timeTableBtn, openChatBtn;
+    View getSuggestionBtn, goalsBtn, timeTableBtn, openChatBtn;
 
     int freeMinutes;
     boolean hasFreeTime;
@@ -88,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 OkHttpClient client = new OkHttpClient();
 
-                String apiKey = "AIzaSyAON5Uv9Sb1iDNzmE8k3RzOnm-MBgGos4w";
+                String apiKey = "GeminiKey";
 
                 JSONArray goalsArray = new JSONArray();
                 List<Goal> goalList = AppData.getInstance().goalList;

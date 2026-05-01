@@ -46,10 +46,10 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
 
         if (message.isUser) {
             holder.container.setGravity(Gravity.END);
-            holder.msgText.setBackgroundResource(R.drawable.bg_message_user);
+            holder.msgText.setBackgroundResource(R.drawable.bg_chat_user);
         } else {
             holder.container.setGravity(Gravity.START);
-            holder.msgText.setBackgroundResource(R.drawable.bg_message);
+            holder.msgText.setBackgroundResource(R.drawable.bg_chat_ai);
         }
     }
 
